@@ -1,8 +1,9 @@
 ############################################################
 """
-DDLK code: Anonymous Github User
+Credits: Mukund Sudarshan, Wes Tansey, Rajesh Ranganath
 """
 ############################################################
+
 import logging
 import os
 from collections import OrderedDict
@@ -18,10 +19,11 @@ from . import cde, mdn, swap
 
 class DDLK(mdn.MDNModel):
     """Knockoff generator"""
+
     def __init__(self, hparams, q_joint):
         """
         hparams must contain:
-        
+
             - n_components : list of dimension d, int
             - X_mu : d-dim tensor of means
             - X_sigma : d-dim tensor of std devs
@@ -71,11 +73,11 @@ class DDLK(mdn.MDNModel):
 
         # save q_joint for training
         self.q_joint = q_joint
-        ## freeze joint model
+        # freeze joint model
         self.q_joint.freeze()
 
         # parametrics
-        ## initialize d CDE networks
+        # initialize d CDE networks
         if hasattr(self.hparams, 'init_type'):
             init_type = self.hparams.init_type
         else:
@@ -87,7 +89,7 @@ class DDLK(mdn.MDNModel):
         self.init_conditionals(kind='knockoff',
                                init_type=init_type,
                                hidden_layers=hidden_layers)
-        ## initialize swapper
+        # initialize swapper
         if hasattr(self.hparams, 'swapper'):
             if self.hparams.swapper == 'gumbel':
                 self.swapper = swap.GumbelSwapper(self.hparams.d,
@@ -141,47 +143,38 @@ class DDLK(mdn.MDNModel):
         xb, = batch
 
         # KL terms
-        ## log q_joint(x)
+        # log q_joint(x)
         lp_xb = self.q_joint.log_prob(xb)
 
-        ## log q_knockoff(~x | x)
-        ### sampled knockoff ~x | x
+        # log q_knockoff(~x | x)
+        # sampled knockoff ~x | x
         xb_tilde = self.sample(xb)
         lp_xb_tilde = self.log_prob(xb, xb_tilde, detach_params=True)
 
-        ## log q_joint(u)
-        ### swap
+        # log q_joint(u)
+        # swap
         ub, ub_tilde = self.swapper(xb, xb_tilde)
         lp_ub = self.q_joint.log_prob(ub)
 
-        ## log q_knockoff(~u | u)
+        # log q_knockoff(~u | u)
         lp_ub_tilde = self.log_prob(ub, ub_tilde)
 
         # define loss. Add regularization only when training
         lmbda = 1.0 if val_step else (1.0 + self.hparams.reg_entropy)
         loss = (lp_xb + lmbda * lp_xb_tilde - lp_ub - lp_ub_tilde).mean()
 
-        tensorboard_logs = {'loss': loss}
-        return OrderedDict({'loss': loss, 'log': tensorboard_logs})
+        # log losses
+        if not val_step:
+            self.log('loss', loss, on_step=True,
+                     on_epoch=False, prog_bar=False)
+        else:
+            self.log('val_loss', loss, on_epoch=True,
+                     on_step=False, prog_bar=True)
+
+        return loss
 
     def validation_step(self, batch, batch_idx):
         return self.training_step(batch, batch_idx, val_step=True)
-
-    def validation_epoch_end(self, outputs):
-        avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
-        tensorboard_logs = {'val_loss': avg_loss}
-        out = dict(val_loss=avg_loss)
-        out['log'] = tensorboard_logs
-        out['progress_bar'] = tensorboard_logs
-
-        # save history
-        for log_stat in ['val_loss']:
-            if log_stat not in self.hparams.history:
-                self.hparams.history[log_stat] = []
-        ## save validation loss
-        self.hparams.history['val_loss'].append(avg_loss.item())
-
-        return out
 
     def on_after_backward(self):
         # change direction of gradient for swapping parameters
@@ -226,7 +219,8 @@ class DDLK(mdn.MDNModel):
             cooldown=self.hparams.scheduler_cooldown,
             min_lr=1e-9,
         )
-        return [optimizer], [scheduler]
+        return {"optimizer": optimizer, "lr_scheduler": scheduler,
+                "monitor": "val_loss"}
 
 
 if __name__ == "__main__":

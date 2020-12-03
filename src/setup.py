@@ -8,7 +8,7 @@ package_dependencies = [
     ('tqdm', '4.0.1'),
     ('torch', '1.5.0'),
     ('torchvision', '0.6.0'),
-    ('pytorch-lightning', '0.7.6')
+    ('pytorch-lightning', '1.0.0')
 ]
 
 dependencies = [f'{p}>={v}' for p, v in package_dependencies]
@@ -18,7 +18,7 @@ with open("../README.md", "r") as fh:
 
 setuptools.setup(
     name="ddlk",
-    version="0.0.0.1",
+    version="0.0.0.2",
     packages=setuptools.find_packages(),
     author="Mukund Sudarshan",
     author_email="ms7490+pip@nyu.edu",

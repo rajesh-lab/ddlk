@@ -1,3 +1,9 @@
+############################################################
+"""
+Credits: Mukund Sudarshan, Wes Tansey, Rajesh Ranganath
+"""
+############################################################
+
 import argparse
 from collections import OrderedDict
 from collections.abc import Iterable
@@ -241,9 +247,6 @@ class MDNJoint(MDNModel):
         xb, = batch
         j = optimizer_idx
 
-        # loss logging
-        tensorboard_logs = dict()
-
         loss_j = 0
         cde_j = getattr(self, f'cde_{j}')
 
@@ -274,16 +277,12 @@ class MDNJoint(MDNModel):
                 loss_j += self.hparams.reg_lambda[j] * (1 / sigma**2).mean()
 
         # record loss_j
-        tensorboard_logs[f'loss_{j}'] = loss_j
+        self.log(f'loss_{j}', loss_j, on_step=True, on_epoch=False, prog_bar=False)
 
-        return OrderedDict({'loss': loss_j, 'log': tensorboard_logs})
+        return loss_j
 
     def validation_step(self, batch, batch_idx):
         xb, = batch
-
-        # loss logging
-        tensorboard_logs = dict()
-        out = dict()
 
         loss = 0
         for j in range(self.hparams.d):
@@ -303,8 +302,7 @@ class MDNJoint(MDNModel):
             loss_j = -lp.mean(axis=0)
 
             # record loss_j
-            tensorboard_logs[f'loss_{j}'] = loss_j
-            out[f'loss_{j}'] = loss_j
+            self.log(f'val_loss_{j}', loss_j, on_epoch=True, on_step=False, prog_bar=False)
 
             # add loss
             loss += loss_j
@@ -312,33 +310,9 @@ class MDNJoint(MDNModel):
         # average loss across conditionals
         loss = loss / self.hparams.d
 
-        out['log'] = tensorboard_logs
-        out['loss'] = loss
+        self.log('val_loss', loss, on_epoch=True, on_step=False, prog_bar=True)
 
-        return OrderedDict(out)
-
-    def validation_epoch_end(self, outputs):
-        avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
-        tensorboard_logs = {'val_loss': avg_loss}
-        out = dict(val_loss=avg_loss)
-
-        for j in range(self.hparams.d):
-            # condense loss for CDE_j
-            avg_loss_j = torch.stack([x[f'loss_{j}'] for x in outputs]).mean()
-
-            # store average validation loss in history
-            if 'val_loss' not in self.hparams.history[j]:
-                self.hparams.history[j]['val_loss'] = []
-            self.hparams.history[j]['val_loss'].append(avg_loss_j)
-
-            tensorboard_logs[f'val_loss_{j}'] = avg_loss_j
-            out[f'val_loss_{j}'] = avg_loss_j
-
-        out['log'] = tensorboard_logs
-
-        out['progress_bar'] = {'val_loss': avg_loss}
-
-        return out
+        return loss
 
     def configure_optimizers(self):
 
