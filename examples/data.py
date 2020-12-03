@@ -38,6 +38,7 @@ class GaussianAR1:
     """
     Gaussian AR(1) model
     """
+
     def __init__(self, p, rho, mu=None):
         """
         Constructor
@@ -67,6 +68,7 @@ class GaussianMixtureAR1:
     """
     Gaussian mixture of AR(1) model
     """
+
     def __init__(self, p, rho_list, mu_list=None, proportions=None):
         # Dimensions
         self.p = p
@@ -158,7 +160,7 @@ def create_dataloaders(X,
 def get_data(args):
     """
     Used in experiments.
-    
+
     Returns trainloader, valloader, testloader for a particular dataset
     """
 
