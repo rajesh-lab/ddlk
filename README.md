@@ -71,18 +71,15 @@ knockoff_test.fit(xTr, yTr, xTr_tilde)
 # Citing this code
 If you use this code, please cite the following paper ([available here](https://arxiv.org/abs/2007.15835)):
 ```
-Deep Direct Likelihood Knockoffs
-M. Sudarshan, W. Tansey, R. Ranganath
-arXiv preprint arXiv:2007.15835
+Sudarshan, Mukund, Wesley Tansey, and Rajesh Ranganath. "Deep direct likelihood knockoffs." Advances in Neural Information Processing Systems 33 (2020).
 ```
 Bibtex entry:
 ```
-@misc{sudarshan2020deep,
-    title={Deep Direct Likelihood Knockoffs},
-    author={Mukund Sudarshan and Wesley Tansey and Rajesh Ranganath},
-    year={2020},
-    eprint={2007.15835},
-    archivePrefix={arXiv},
-    primaryClass={stat.ML}
+@article{sudarshan2020deep,
+  title={Deep Direct Likelihood Knockoffs},
+  author={Sudarshan, Mukund and Tansey, Wesley and Ranganath, Rajesh},
+  journal={Advances in Neural Information Processing Systems},
+  volume={33},
+  year={2020}
 }
 ```
