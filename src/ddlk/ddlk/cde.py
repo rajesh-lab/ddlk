@@ -216,7 +216,7 @@ class CDE(nn.Module):
         standardized_sample = q_y.rsample()
 
         # return un-standardized sample
-        unstandardized_sample = standardized_sample * self.hparams.y_sigma + self.hparams.y_mu
+        unstandardized_sample = standardized_sample * self.y_sigma + self.y_mu
         return unstandardized_sample
 
     def rsample(self, x):
